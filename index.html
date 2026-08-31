@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#161826" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>ScoreRun — Corré mejor. Entendé tu carrera.</title>
@@ -15,6 +16,8 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- credenciales en runtime: no pasan por el build -->
+    <script src="/config.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
