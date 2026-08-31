@@ -13,14 +13,45 @@ export function fmtDuration(seconds) {
   return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** '22:45' | '1:02:30' -> segundos. Devuelve null si no parsea. */
+/** '22:45' | '1:02:30' | '2245' -> segundos. Devuelve null si no parsea.
+    Tolerante a propósito: en el teclado numérico del celular los dos puntos
+    no siempre están a mano, así que también aceptamos dígitos sueltos. */
 export function parseDuration(input) {
   if (!input) return null;
-  const parts = String(input).trim().split(':').map(Number);
-  if (parts.some(Number.isNaN)) return null;
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  return null;
+  const raw = String(input).trim().replace(/[.,\s]/g, ':');
+
+  if (raw.includes(':')) {
+    const parts = raw.split(':').map(Number);
+    if (parts.some((n) => Number.isNaN(n) || n < 0)) return null;
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return null;
+  }
+
+  // solo dígitos: se leen de derecha a izquierda — ss, luego mm, luego hh
+  if (!/^\d{1,6}$/.test(raw)) return null;
+  const d = raw.padStart(raw.length <= 4 ? 4 : 6, '0');
+  const s = Number(d.slice(-2));
+  const m = Number(d.slice(-4, -2));
+  const h = d.length > 4 ? Number(d.slice(0, -4)) : 0;
+  if (s > 59 || m > 59) return null;
+  return h * 3600 + m * 60 + s;
+}
+
+/** Máscara mientras se escribe: 2245 -> '22:45', 10230 -> '1:02:30' */
+export function maskDuration(input) {
+  const d = String(input).replace(/\D/g, '').slice(0, 6);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return d.slice(0, -2) + ':' + d.slice(-2);
+  return d.slice(0, -4) + ':' + d.slice(-4, -2) + ':' + d.slice(-2);
+}
+
+/** Distancia: dígitos y un único separador decimal, máximo dos decimales. */
+export function maskDistance(input) {
+  let s = String(input).replace(',', '.').replace(/[^\d.]/g, '');
+  const i = s.indexOf('.');
+  if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, '').slice(0, 2);
+  return s.slice(0, 6);
 }
 
 export function fmtPace(secondsPerKm) {
