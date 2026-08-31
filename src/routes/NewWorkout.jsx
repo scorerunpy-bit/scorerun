@@ -5,7 +5,7 @@ import { Plus, X } from '@phosphor-icons/react';
 import { supabase } from '../lib/supabase';
 import { Screen } from '../components/Screen';
 import { Button, Chip, ErrorBanner, Label } from '../components/ui';
-import { fmtPace, parseDuration } from '../lib/format';
+import { fmtPace, maskDistance, maskDuration, parseDuration } from '../lib/format';
 
 const TYPES = [
   { key: 'continuous', label: 'Continuo' },
@@ -34,11 +34,23 @@ export default function NewWorkout() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const km = Number(String(distance).replace(',', '.'));
+  const km = Number(distance);
   const seconds = parseDuration(duration);
   // el ritmo se DERIVA, nunca se pide
   const pace = useMemo(() => (km > 0 && seconds > 0 ? seconds / km : null), [km, seconds]);
-  const valid = km >= 0.1 && km <= 100 && seconds > 0;
+
+  // los mismos límites que valida la base, para avisar acá y no después de guardar
+  const kmError = !distance ? null
+    : !Number.isFinite(km) || km <= 0 ? 'Ingresá un número'
+    : km < 0.1 ? 'Mínimo 0,1 km'
+    : km > 100 ? 'Máximo 100 km' : null;
+
+  const timeError = !duration ? null
+    : seconds === null ? 'Formato: mm:ss o hh:mm:ss'
+    : seconds < 30 ? 'Mínimo 30 segundos'
+    : seconds > 86400 ? 'Máximo 24 horas' : null;
+
+  const valid = km >= 0.1 && km <= 100 && seconds >= 30 && seconds <= 86400;
 
   async function save() {
     setBusy(true); setError(null);
@@ -67,13 +79,23 @@ export default function NewWorkout() {
         {error && <ErrorBanner onRetry={save}>{error}</ErrorBanner>}
 
         <div className="flex gap-3">
-          <Field label="Distancia" unit="km">
-            <input inputMode="decimal" value={distance} onChange={(e) => setDistance(e.target.value)} placeholder="5,02"
-              className="num w-full bg-transparent text-3xl font-medium outline-none placeholder:text-neutral-700" />
+          <Field label="Distancia" unit="km" error={kmError}>
+            <input
+              inputMode="decimal" enterKeyHint="next" value={distance}
+              onChange={(e) => setDistance(maskDistance(e.target.value))}
+              placeholder="5.02"
+              className="num w-full bg-transparent text-3xl font-medium outline-none placeholder:text-neutral-700"
+            />
           </Field>
-          <Field label="Tiempo">
-            <input inputMode="numeric" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="22:45"
-              className="num w-full bg-transparent text-3xl font-medium outline-none placeholder:text-neutral-700" />
+          {/* el teclado numérico del celular no siempre trae ":", así que
+              lo ponemos nosotros a medida que escribe */}
+          <Field label="Tiempo" hint="mm:ss" error={timeError}>
+            <input
+              inputMode="numeric" enterKeyHint="done" value={duration}
+              onChange={(e) => setDuration(maskDuration(e.target.value))}
+              placeholder="22:45"
+              className="num w-full bg-transparent text-3xl font-medium outline-none placeholder:text-neutral-700"
+            />
           </Field>
         </div>
 
@@ -137,14 +159,21 @@ export default function NewWorkout() {
   );
 }
 
-function Field({ label, unit, children }) {
+function Field({ label, unit, hint, error, children }) {
   return (
-    <label className="flex flex-1 flex-col gap-1.5 rounded bg-card p-4 shadow-edge">
-      <Label>{label}</Label>
+    <label
+      className={'flex flex-1 flex-col gap-1.5 rounded bg-card p-4' + (error ? '' : ' shadow-edge')}
+      style={error ? { boxShadow: '0 0 0 1px rgba(221,139,139,.55)' } : undefined}
+    >
+      <span className="flex items-baseline justify-between gap-2">
+        <Label>{label}</Label>
+        {hint && <span className="text-[11px] text-neutral-700">{hint}</span>}
+      </span>
       <span className="flex items-baseline gap-1.5">
         {children}
         {unit && <span className="text-sm text-neutral-600">{unit}</span>}
       </span>
+      {error && <span className="text-xs text-score-rest">{error}</span>}
     </label>
   );
 }
