@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { background: theme('colors.bg'); }
+  body {
+    margin: 0;
+    background: theme('colors.bg');
+    color: theme('colors.text');
+    font-family: theme('fontFamily.sans');
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* jerarquía por tamaño y espacio: los títulos no pasan de 500 */
+  h1, h2, h3, h4 { font-weight: 500; letter-spacing: -0.02em; line-height: 1.12; margin: 0; }
+  a { color: theme('colors.accent.DEFAULT'); text-underline-offset: 3px; }
+  a:hover { color: theme('colors.accent.400'); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid theme('colors.accent.DEFAULT'); outline-offset: 2px; }
+  ::selection { background: rgb(145 132 217 / 0.3); }
+  /* todos los números de la app son tabulares */
+  .num { font-variant-numeric: tabular-nums; }
+}
+
+@layer utilities {
+  /* regla que se desvanece a transparente en los extremos */
+  .rule-fade {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #2f3240 20%, #2f3240 80%, transparent);
+  }
+  .safe-top { padding-top: max(70px, calc(env(safe-area-inset-top) + 46px)); }
+  .safe-bottom { padding-bottom: max(46px, calc(env(safe-area-inset-bottom) + 12px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
